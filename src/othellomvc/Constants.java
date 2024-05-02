@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package com.mrjaffesclass.apcs.mvc.template;
+package othellomvc;
 
 /**
  * @author Roger Jaffe

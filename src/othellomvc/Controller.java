@@ -1,4 +1,4 @@
-package com.mrjaffesclass.apcs.mvc.template;
+package othellomvc;
 import com.mrjaffesclass.apcs.messenger.*;
 
 /**
