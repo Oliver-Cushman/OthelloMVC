@@ -1,6 +1,9 @@
 package othellomvc;
 import com.mrjaffesclass.apcs.messenger.*;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.JButton;
 /**
  * MVC Template
@@ -14,6 +17,8 @@ public class View extends javax.swing.JFrame implements MessageHandler {
 
   private final Messenger mvcMessaging;
   
+  private JButton[][] buttons = new JButton[Constants.NUM_ROWS][Constants.NUM_COLS];
+  
   /**
    * Creates a new view
    * @param messages mvcMessaging object
@@ -21,7 +26,6 @@ public class View extends javax.swing.JFrame implements MessageHandler {
   public View(Messenger messages) {
     mvcMessaging = messages;   // Save the calling controller instance
     initComponents();           // Create and init the GUI components
-    initGrid();
   }
   
   /**
@@ -30,7 +34,7 @@ public class View extends javax.swing.JFrame implements MessageHandler {
    */
   public void init() {
     // Subscribe to messages here
-    
+    mvcMessaging.subscribe("boardChange", this);
   }
   
   @Override
@@ -41,13 +45,33 @@ public class View extends javax.swing.JFrame implements MessageHandler {
       System.out.println("MSG: received by view: "+messageName+" | No data sent");
     }
     
+    if (messageName.equals("boardChange")) {
+        int[][] board = (int[][]) messagePayload;
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                if (board[i][j] != 0) {
+                    buttons[i][j].setText((board[i][j] == 1) ? "X" : "O");
+                }
+            }
+        }
+    }
   }
   
   private void initGrid() {
-      jPanel1.setBackground(Color.blue);
+      jPanel1.setBackground(Color.gray);
       for (int i = 0; i < Constants.NUM_ROWS; i++) {
           for (int j = 0; j < Constants.NUM_COLS; j++) {
-              jPanel1.add(new JButton("i"));
+              buttons[i][j] = new JButton();
+              buttons[i][j].setBackground(Color.white);
+              buttons[i][j].setPreferredSize(new Dimension(60, 60));
+              final String space = i + "" + j;
+              buttons[i][j].addActionListener(new ActionListener() {
+                  @Override
+                  public void actionPerformed(ActionEvent e) {
+                      mvcMessaging.notify("playerMove", space);
+                  }
+              });
+              jPanel1.add(buttons[i][j]);
           }
       }
   }
@@ -64,10 +88,10 @@ public class View extends javax.swing.JFrame implements MessageHandler {
         jPanel1 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(600, 600));
         setResizable(false);
 
-        jPanel1.setLayout(new java.awt.GridLayout(8, 8, 64, 64));
+        jPanel1.setLayout(new java.awt.GridLayout(8, 8));
+        initGrid();
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
