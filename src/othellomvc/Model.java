@@ -19,6 +19,8 @@ public class Model implements MessageHandler {
     private boolean gameOver;
 
     private int[][] board;
+    
+    private List<String> prevLegalMoves = new ArrayList<String>();
 
     /**
      * Model constructor: Create the data representation of the program
@@ -28,9 +30,7 @@ public class Model implements MessageHandler {
      */
     public Model(Messenger messages) {
         mvcMessaging = messages;
-        whoseMove = false;
-        gameOver = false;
-        board = new int[Constants.NUM_ROWS][Constants.NUM_COLS];
+        newGame();
     }
 
     /**
@@ -38,11 +38,22 @@ public class Model implements MessageHandler {
      */
     public void init() {
         mvcMessaging.subscribe("playerMove", this);
+        mvcMessaging.subscribe("newGame", this);
+    }
+    
+    private void newGame() {
+        board = new int[Constants.NUM_ROWS][Constants.NUM_COLS];
         board[3][3] = 1;
         board[3][4] = -1;
         board[4][3] = -1;
         board[4][4] = 1;
+        whoseMove = ((int)(Math.random() * 2) == 1) ? true : false;
+        gameOver = false;
+        prevLegalMoves = legalMoves();
+        mvcMessaging.notify("newLegalMoves", prevLegalMoves);
         mvcMessaging.notify("boardChange", board);
+        mvcMessaging.notify("whoseMoveChange", whoseMove);
+        
     }
 
     @Override
@@ -57,29 +68,35 @@ public class Model implements MessageHandler {
             String position = (String) messagePayload;
             int row = Integer.parseInt(position.substring(0, 1));
             int col = Integer.parseInt(position.substring(1));
-            if (tryMove(row, col)) {
+            if (tryMove(row, col, true) || prevLegalMoves.isEmpty()) {
                 whoseMove = !whoseMove;
+                prevLegalMoves = legalMoves();
+                mvcMessaging.notify("newLegalMoves", prevLegalMoves);
+                mvcMessaging.notify("whoseMoveChange", whoseMove);
                 mvcMessaging.notify("boardChange", board);
             }
+        } else if (messageName.equals("newGame")) {
+            newGame();
         }
     }
 
-    private boolean tryMove(int row, int col) {
+    private boolean tryMove(int row, int col, boolean makeMove) {
         String[] allDirections = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
         boolean goodMove = false;
         for (String direction : allDirections) {
-            if (moveInDirection(direction, row, col)) {
-                System.out.println("good " + direction);
+            if (moveInDirection(direction, row, col, makeMove)) {
                 goodMove = true;
             }
         }
-        
+        if (goodMove && makeMove) {
+            board[row][col] = whoseMove ? 1 : -1;
+        }
         return goodMove;
     }
 
-    private boolean moveInDirection(String direction, int row, int col) {
+    private boolean moveInDirection(String direction, int row, int col, boolean makeMove) {
         int ownPiece = whoseMove ? 1 : -1;
-
+        if (board[row][col] == ownPiece || board[row][col] == ownPiece * - 1) return false;
         List<String> coordinates = new ArrayList<String>();
         int count = 0;
         boolean found = false;
@@ -90,7 +107,9 @@ public class Model implements MessageHandler {
             } else if (count >= 2 && board[row][col] == ownPiece) {
                 found = true;
             }
-            coordinates.add(row + "" + col);
+            if (count != 0) {
+                coordinates.add(row + "" + col);
+            }
             switch (direction) {
                 case "N":
                     row--;
@@ -123,14 +142,26 @@ public class Model implements MessageHandler {
             }
             count++;
         }
-        if (found) {
+        if (found && makeMove) {
             for (String coordinate : coordinates) {
                 int rowTemp = Integer.parseInt(coordinate.substring(0, 1));
                 int colTemp = Integer.parseInt(coordinate.substring(1));
                 board[rowTemp][colTemp] = ownPiece;
             }
-            return true;
         }
-        return false;
+        return found;
+    }
+    
+    private List<String> legalMoves() {
+        List<String> legalMoves = new ArrayList<String>();
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                if (tryMove(i, j, false)) {
+                    legalMoves.add(i + "" + j);
+                }
+            }
+        }
+        System.out.println(legalMoves);
+        return legalMoves;
     }
 }

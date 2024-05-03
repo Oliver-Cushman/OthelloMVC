@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import javax.swing.JButton;
 /**
  * MVC Template
@@ -35,6 +36,8 @@ public class View extends javax.swing.JFrame implements MessageHandler {
   public void init() {
     // Subscribe to messages here
     mvcMessaging.subscribe("boardChange", this);
+    mvcMessaging.subscribe("whoseMoveChange", this);
+    mvcMessaging.subscribe("newLegalMoves", this);
   }
   
   @Override
@@ -50,9 +53,26 @@ public class View extends javax.swing.JFrame implements MessageHandler {
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j++) {
                 if (board[i][j] != 0) {
-                    buttons[i][j].setText((board[i][j] == 1) ? "X" : "O");
+                    buttons[i][j].setBackground((board[i][j] == 1) ? Color.black : Color.white);
+                } else {
+                    buttons[i][j].setText("");
                 }
             }
+        }
+    } else if (messageName.equals("whoseMoveChange")) {
+        String player = ((boolean) messagePayload) ? Constants.p1Long : Constants.p2Long;
+        jLabel1.setText(player + "'s move");
+    } else if (messageName.equals("newLegalMoves")) {
+        List<String> moves = (List<String>) messagePayload;
+        for (JButton[] buttonRow : buttons) {
+            for (JButton button : buttonRow) {
+                button.setBackground(Color.gray);
+            }
+        }
+        for (String move : moves) {
+            int row = Integer.parseInt(move.substring(0, 1));
+            int col = Integer.parseInt(move.substring(1));
+            buttons[row][col].setBackground(Color.green);
         }
     }
   }
@@ -62,8 +82,7 @@ public class View extends javax.swing.JFrame implements MessageHandler {
       for (int i = 0; i < Constants.NUM_ROWS; i++) {
           for (int j = 0; j < Constants.NUM_COLS; j++) {
               buttons[i][j] = new JButton();
-              buttons[i][j].setBackground(Color.white);
-              buttons[i][j].setPreferredSize(new Dimension(60, 60));
+              buttons[i][j].setBackground(Color.gray);
               final String space = i + "" + j;
               buttons[i][j].addActionListener(new ActionListener() {
                   @Override
@@ -86,6 +105,8 @@ public class View extends javax.swing.JFrame implements MessageHandler {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -93,19 +114,40 @@ public class View extends javax.swing.JFrame implements MessageHandler {
         jPanel1.setLayout(new java.awt.GridLayout(8, 8));
         initGrid();
 
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+
+        jButton1.setText("New Game");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                newGame(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(0, 488, Short.MAX_VALUE)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(14, 14, 14))
             .addGroup(layout.createSequentialGroup()
-                .addGap(88, 88, 88)
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(112, Short.MAX_VALUE))
+                .addGap(98, 98, 98)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(106, 106, 106)
+                .addGap(12, 12, 12)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(94, Short.MAX_VALUE))
         );
@@ -113,11 +155,17 @@ public class View extends javax.swing.JFrame implements MessageHandler {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void newGame(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newGame
+        mvcMessaging.notify("newGame");
+    }//GEN-LAST:event_newGame
+
   /**
    * @param args the command line arguments
    */
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     // End of variables declaration//GEN-END:variables
 }
