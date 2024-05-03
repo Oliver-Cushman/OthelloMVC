@@ -1,5 +1,7 @@
 package othellomvc;
 import com.mrjaffesclass.apcs.messenger.*;
+import java.awt.Color;
+import javax.swing.JButton;
 /**
  * MVC Template
  * This is a template of an MVC framework used by APCS for the 
@@ -19,6 +21,7 @@ public class View extends javax.swing.JFrame implements MessageHandler {
   public View(Messenger messages) {
     mvcMessaging = messages;   // Save the calling controller instance
     initComponents();           // Create and init the GUI components
+    initGrid();
   }
   
   /**
@@ -38,6 +41,15 @@ public class View extends javax.swing.JFrame implements MessageHandler {
       System.out.println("MSG: received by view: "+messageName+" | No data sent");
     }
     
+  }
+  
+  private void initGrid() {
+      jPanel1.setBackground(Color.blue);
+      for (int i = 0; i < Constants.NUM_ROWS; i++) {
+          for (int j = 0; j < Constants.NUM_COLS; j++) {
+              jPanel1.add(new JButton("i"));
+          }
+      }
   }
 
   /**
