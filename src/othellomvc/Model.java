@@ -20,7 +20,10 @@ public class Model implements MessageHandler {
 
     private int[][] board;
     
-    private List<String> prevLegalMoves = new ArrayList<String>();
+    private List<String> prevLegalMoves;
+    
+    private int p1Count;
+    private int p2Count;
 
     /**
      * Model constructor: Create the data representation of the program
@@ -49,10 +52,13 @@ public class Model implements MessageHandler {
         board[4][4] = 1;
         whoseMove = ((int)(Math.random() * 2) == 1) ? true : false;
         gameOver = false;
+        p1Count = 2;
+        p2Count = 2;
         prevLegalMoves = legalMoves();
         mvcMessaging.notify("newLegalMoves", prevLegalMoves);
         mvcMessaging.notify("boardChange", board);
         mvcMessaging.notify("whoseMoveChange", whoseMove);
+        mvcMessaging.notify("pieceCountChange", getCounts());
         
     }
 
@@ -68,16 +74,34 @@ public class Model implements MessageHandler {
             String position = (String) messagePayload;
             int row = Integer.parseInt(position.substring(0, 1));
             int col = Integer.parseInt(position.substring(1));
-            if (tryMove(row, col, true) || prevLegalMoves.isEmpty()) {
-                whoseMove = !whoseMove;
-                prevLegalMoves = legalMoves();
-                mvcMessaging.notify("newLegalMoves", prevLegalMoves);
-                mvcMessaging.notify("whoseMoveChange", whoseMove);
+            if (tryMove(row, col, true) || prevLegalMoves.isEmpty() && !gameOver) {
+                int totalCount = p1Count + p2Count;
+                if (totalCount < Constants.NUM_COLS * Constants.NUM_ROWS) {
+                    whoseMove = !whoseMove;
+                    prevLegalMoves = legalMoves();
+                    mvcMessaging.notify("newLegalMoves", prevLegalMoves);
+                    mvcMessaging.notify("whoseMoveChange", whoseMove);
+                } else {
+                    boolean tie = p1Count == p2Count;
+                    boolean p1Win = p1Count > p2Count;
+                    if (tie) {
+                        mvcMessaging.notify("tie");
+                    } else {
+                        mvcMessaging.notify("win", whoseMove);
+                    }
+                    gameOver = true;
+                }
                 mvcMessaging.notify("boardChange", board);
+                mvcMessaging.notify("pieceCountChange", getCounts());
             }
         } else if (messageName.equals("newGame")) {
             newGame();
         }
+    }
+    
+    private int[] getCounts() {
+        int[] counts = { p1Count, p2Count };
+        return counts;
     }
 
     private boolean tryMove(int row, int col, boolean makeMove) {
@@ -90,6 +114,11 @@ public class Model implements MessageHandler {
         }
         if (goodMove && makeMove) {
             board[row][col] = whoseMove ? 1 : -1;
+            if (whoseMove) {
+                p1Count++;
+            } else {
+                p2Count++;
+            }
         }
         return goodMove;
     }
@@ -106,8 +135,7 @@ public class Model implements MessageHandler {
                 valid = false;
             } else if (count >= 2 && board[row][col] == ownPiece) {
                 found = true;
-            }
-            if (count != 0) {
+            } else if (count != 0) {
                 coordinates.add(row + "" + col);
             }
             switch (direction) {
@@ -147,6 +175,13 @@ public class Model implements MessageHandler {
                 int rowTemp = Integer.parseInt(coordinate.substring(0, 1));
                 int colTemp = Integer.parseInt(coordinate.substring(1));
                 board[rowTemp][colTemp] = ownPiece;
+                if (whoseMove) {
+                    p1Count++;
+                    p2Count--;
+                } else {
+                    p1Count--;
+                    p2Count++;
+                }
             }
         }
         return found;
